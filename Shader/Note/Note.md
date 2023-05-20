@@ -392,7 +392,7 @@ $$
 
 #### 正交矩阵（orthogonal matrix）
 
-如果一个 [方阵](#方块矩阵square-matrix) $M$ 和它的 [转置矩阵](#转置矩阵transposed-matrix) 的乘积是 [单位矩阵](#单位矩阵identity-matrix) 的话，那么这个矩阵是正交的（orthogonal）。反过来也是成立的。也就是说，矩阵M是正交的等价于： $M M^T = M^T M = I$\
+如果一个 [方阵](#方块矩阵square-matrix) $M$ 和它的 [转置矩阵](#转置矩阵transposed-matrix) $M^{T}$ 的乘积是 [单位矩阵](#单位矩阵identity-matrix) $I$ 的话，那么这个矩阵是正交的（orthogonal）。反过来也是成立的。也就是说，矩阵M是正交的等价于： $M M^T = M^T M = I$\
 即如果一个矩阵是正交的，那么它的转置矩阵和逆矩阵是一样的。也就是说，矩阵 $M$ 是正交的等价于： $M^T = M^{-1}$
 
 [简单推导](#正交矩阵-就是由一组-标准正交基-组成的推导过程) 后，可以发现正交矩阵就是由一组标准正交基组成的，反之亦然。
@@ -491,7 +491,8 @@ Vector: \quad &(x, y, z), \quad &w = 0
 假设沿 $x, y, z$ 轴上的平移分别为 $t_x, t_y, t_z$ ，那么平移矩阵为
 
 $$
-\begin{bmatrix}
+M_{translation}
+=\begin{bmatrix}
 1 & 0 & 0 & t_x \\
 0 & 1 & 0 & t_y \\
 0 & 0 & 1 & t_z \\
@@ -552,6 +553,24 @@ $$
 - 对 *位置坐标* 进行平移操作，得到平移之后新的位置坐标。
 - 对 *方向矢量* 进行平移操作，得到的结果还是方向矢量本身。
 
+平移矩阵 **不是** [正交矩阵](#正交矩阵orthogonal-matrix) ，平移矩阵的逆矩阵是反向平移的矩阵，即
+
+$$
+M_{translation}^{-1}
+=\begin{bmatrix}
+1 & 0 & 0 & t_x \\
+0 & 1 & 0 & t_y \\
+0 & 0 & 1 & t_z \\
+0 & 0 & 0 & 1
+\end{bmatrix}^{-1}
+=\begin{bmatrix}
+1 & 0 & 0 & -t_x \\
+0 & 1 & 0 & -t_y \\
+0 & 0 & 1 & -t_z \\
+0 & 0 & 0 & 1
+\end{bmatrix}
+$$
+
 #### 旋转矩阵
 
 绕 X 轴旋转的旋转矩阵为
@@ -594,30 +613,25 @@ $$
 
 绕任意周旋转的旋转矩阵见 [四元数部分](#四元数旋转对应的矩阵)
 
-#### 缩放矩阵
-
-#### 错切矩阵
-
-#### 镜像矩阵
-
-#### 正交投影矩阵
-
-#### 透视投影矩阵
+旋转矩阵 **是** [正交矩阵](#正交矩阵orthogonal-matrix) ，多个旋转的复合矩阵同样 **是** [正交矩阵](#正交矩阵orthogonal-matrix) 。即
+$$
+M_{rotation}^{-1}\ =\ M_{rotation}^{T}
+$$
 
 #### 复合旋转
 
 Unity 复合旋转的顺序为 Z轴 -> X轴 -> Y轴 ，虽然在 Inspector 窗口中显示的是用绕坐标轴旋转的欧拉角，但是实际上 Unity 是用 [Quaternion](https://docs.unity3d.com/ScriptReference/Quaternion.html) 来存储旋转的。
 
-**特别注意：** Unity 在使用欧拉角行旋转时，欧拉角对应的数值 **不旋转坐标系本身** 。例如：在 Inspector 窗口中输入 X 轴旋转 90 度，Y 轴旋转 90 度。得到的结果是：先绕坐标系的 X 轴旋转 90 度，然后绕 **同样坐标系** 的 Y 轴旋转 90 度。
+**特别注意：** Unity 在使用欧拉角行旋转时， **不旋转坐标系本身** 。例如：在 Inspector 窗口中输入 X 轴旋转 90 度，Y 轴旋转 90 度。得到的结果是：先绕坐标系的 X 轴旋转 90 度，然后绕 **同样坐标系** 的 Y 轴旋转 90 度。
 
-如果我们使用正常的矩阵模式 $M_{rotation} = R_y \ R_x \ R_z$ 的顺序来计算时， **矩阵运算是旋转了坐标系的** 。所以为了保持 Unity 的旋转规则，我们实际使用的旋转矩阵是
+**经验证：** Unity 实际使用的旋转矩阵是
 
 $$\begin{aligned}
-M_{rotation} = R_z \ R_x \ R_y
+M_{rotation} = R_y \ R_x \ R_z
 =\begin{bmatrix}
-\cos\theta_z & -\sin\theta_z & 0 & 0 \\
-\sin\theta_z & \cos\theta_z & 0 & 0 \\
-0 & 0 & 1 & 0 \\
+\cos\theta_y & 0 & \sin\theta_y & 0 \\
+0 & 1 & 0 & 0 \\
+-\sin\theta_y & 0 & \cos\theta_y & 0 \\
 0 & 0 & 0 & 1
 \end{bmatrix} \
 \begin{bmatrix}
@@ -627,20 +641,169 @@ M_{rotation} = R_z \ R_x \ R_y
 0 & 0 & 0 & 1
 \end{bmatrix} \
 \begin{bmatrix}
-\cos\theta_y & 0 & \sin\theta_y & 0 \\
-0 & 1 & 0 & 0 \\
--\sin\theta_y & 0 & \cos\theta_y & 0 \\
+\cos\theta_z & -\sin\theta_z & 0 & 0 \\
+\sin\theta_z & \cos\theta_z & 0 & 0 \\
+0 & 0 & 1 & 0 \\
 0 & 0 & 0 & 1
 \end{bmatrix}
 \end{aligned}$$
 
-***Todo***: 这里有待证明。
-
 参考 [Unity 文档](https://docs.unity3d.com/ScriptReference/Transform-eulerAngles.html)
+
+#### 缩放矩阵
+
+沿坐标轴进行缩放，分为 [统一缩放](#统一缩放uniform-scale) 和 [非统一缩放](#非统一缩放nonuniform-scale)\
+假设沿 $x, y, z$ 轴上的缩放系数分别为 $k_x, k_y, k_z$ ，那么缩放矩阵为
+
+$$
+M_{scale}
+=\begin{bmatrix}
+k_x & 0 & 0 & 0 \\
+0 & k_y & 0 & 0 \\
+0 & 0 & k_z & 0 \\
+0 & 0 & 0 & 1
+\end{bmatrix}
+$$
+
+缩放矩阵 **不是** [正交矩阵](#正交矩阵orthogonal-matrix) ，缩放矩阵的逆矩阵是使用原缩放系数的倒数来求得，即
+
+$$
+M_{scale}^{-1}
+=\begin{bmatrix}
+k_x & 0 & 0 & 0 \\
+0 & k_y & 0 & 0 \\
+0 & 0 & k_z & 0 \\
+0 & 0 & 0 & 1
+\end{bmatrix}^{-1}
+=\begin{bmatrix}
+\dfrac{1}{k_x} & 0 & 0 & 0 \\
+0 & \dfrac{1}{k_y} & 0 & 0 \\
+0 & 0 & \dfrac{1}{k_z} & 0 \\
+0 & 0 & 0 & 1
+\end{bmatrix}
+$$
 
 #### 复合变换
 
+由 平移、（复合）旋转、缩放 所组成的变换，被称为复合变换。在 Unity 中，变换的顺序为：先缩放，再旋转，最后平移。即
+
+$$
+M_{transform} = M_{translation} \ M_{rotation} \ M_{scale}
+$$
+
+**注意：** 这个变换的顺序其实是由变换矩阵本身的特点（即所有变换都是相对同一个坐标系而言）所决定的，符合一般人的基本概念。所以这个顺序并不是随便定义的。
+
 #### 复合变换矩阵各列的意义
+
+假设 [复合变换](#复合变换) 矩阵为如下形式
+
+$$
+M =
+\begin{bmatrix}
+m_0 & m_3 & m_6 & m_9 \\
+m_1 & m_4 & m_7 & m_{10} \\
+m_2 & m_5 & m_8 & m_{11} \\
+0 & 0 & 0 & 1
+\end{bmatrix}
+=\begin{bmatrix}
+\ | & | & | & | \ \\
+\ \vec v_1 & \vec v_2 & \vec v_3 & \vec v_4\ \\
+\ | & | & | & | \ \\
+\ 0 & 0 & 0 & 1 \
+\end{bmatrix}
+$$
+
+那么
+
+- 矢量 $\vec v_1$ 的方向 $\hat v_1$ 就是（原坐标系的） $x$ 轴变换之后（在原坐标系下）的方向，
+模长 $\lVert \vec v_1 \rVert$ 为 $x$ 轴方向的缩放系数。
+- 矢量 $\vec v_2$ 的方向 $\hat v_2$ 就是（原坐标系的） $y$ 轴变换之后（在原坐标系下）的方向，
+模长 $\lVert \vec v_2 \rVert$ 为 $y$ 轴方向的缩放系数。
+- 矢量 $\vec v_3$ 的方向 $\hat v_3$ 就是（原坐标系的） $z$ 轴变换之后（在原坐标系下）的方向，
+模长 $\lVert \vec v_3 \rVert$ 为 $z$ 轴方向的缩放系数。
+- 矢量 $\vec v_4$ 就是（原坐标系的）原点变换之后（在原坐标系下）的位置。
+
+那么就可以算出来 $M$ 的逆矩阵为
+$$\begin{aligned}
+M^{-1} &=
+\begin{bmatrix}
+\dfrac{m_0}{{\lVert \vec v_1 \rVert}^2} & \dfrac{m_1}{{\lVert \vec v_1 \rVert}^2} & \dfrac{m_2}{{\lVert \vec v_1 \rVert}^2} & 0 \\
+\ \\
+\dfrac{m_3}{{\lVert \vec v_2 \rVert}^2} & \dfrac{m_4}{{\lVert \vec v_2 \rVert}^2} & \dfrac{m_5}{{\lVert \vec v_2 \rVert}^2} & 0 \\
+\ \\
+\dfrac{m_6}{{\lVert \vec v_3 \rVert}^2} & \dfrac{m_7}{{\lVert \vec v_3 \rVert}^2} & \dfrac{m_8}{{\lVert \vec v_3 \rVert}^2} & 0 \\
+\ \\
+\ 0 & 0 & 0 & 1
+\end{bmatrix} \
+\begin{bmatrix}
+1 & 0 & 0 & -m_9 \\
+\ \\
+0 & 1 & 0 & -m_{10} \\
+\ \\
+0 & 0 & 1 & -m_{11} \\
+\ \\
+0 & 0 & 0 & 1
+\end{bmatrix} \\
+\ \\ &=\begin{bmatrix}
+\dfrac{m_0}{{\lVert \vec v_1 \rVert}^2} & \dfrac{m_1}{{\lVert \vec v_1 \rVert}^2} & \dfrac{m_2}{{\lVert \vec v_1 \rVert}^2} & -\ \dfrac{\vec v_1 \cdot \vec v_4}{{\lVert \vec v_1 \rVert}^2} \\
+\ \\
+\dfrac{m_3}{{\lVert \vec v_2 \rVert}^2} & \dfrac{m_4}{{\lVert \vec v_2 \rVert}^2} & \dfrac{m_5}{{\lVert \vec v_2 \rVert}^2} & -\ \dfrac{\vec v_2 \cdot \vec v_4}{{\lVert \vec v_2 \rVert}^2} \\
+\ \\
+\dfrac{m_6}{{\lVert \vec v_3 \rVert}^2} & \dfrac{m_7}{{\lVert \vec v_3 \rVert}^2} & \dfrac{m_8}{{\lVert \vec v_3 \rVert}^2} & -\ \dfrac{\vec v_3 \cdot \vec v_4}{{\lVert \vec v_3 \rVert}^2} \\
+\ \\
+\ 0 & 0 & 0 & 1
+\end{bmatrix}
+\end{aligned}$$
+
+#### 错切矩阵
+
+***ToDo***: 待完善
+
+#### 镜像矩阵
+
+***ToDo***: 待完善
+
+#### 正交投影矩阵
+
+假设，近平面到摄像机的距离为 $N$ ,远平面到摄像机的距离为 $F$ ，近平面中心点到近平面的顶边的距离为 $size$ ，近平面的 $width : height = aspect$ 。那么正交投影矩阵为
+
+$$
+M_{ortho} = \
+\begin{bmatrix}
+\dfrac{1}{aspect\ *\ size} &0 &0 &0  \\
+\ \\
+0 & \dfrac{1}{size} & 0 &0  \\
+\ \\
+0 & 0 & -\ \dfrac{2}{F - N} & -\ \dfrac{F + N}{F - N}  \\
+\ \\
+0 & 0 & 0 & 1
+\end{bmatrix}
+$$
+
+具体推导见 [正交投影矩阵的推导](#正交orthographic投影矩阵推导)
+
+#### 透视投影矩阵
+
+假设，近平面到摄像机的距离为 $N$ ,远平面到摄像机的距离为 $F$ ，摄像机的垂直张角为 $FOV$ 。近平面的 $\dfrac{width}{height} = aspect$ 。那么透视投影矩阵为
+
+$$
+M_{frustum} = \
+\begin{bmatrix}
+\dfrac{\cot(\dfrac{FOV}{2})}{aspect} & 0 & 0 & 0  \\
+\ \\
+0 & \cot(\dfrac{FOV}{2}) & 0 & 0  \\
+\ \\
+0 & 0 & -\ \dfrac{F + N}{F - N} & -\ \dfrac{2\ *\ F\ *\ N}{F - N}  \\
+\ \\
+0 & 0 & -1 & 0
+\end{bmatrix}
+$$
+
+具体推导见 [透视投影矩阵的推导](#透视perspective投影矩阵推导)
+
+### 坐标空间
+
+
 
 
 
@@ -1727,6 +1890,14 @@ var direction = heading / distance; // This is now the normalized direction.
 $MI = IM = M$\
 这就跟标量中的数字 1 一样
 
+### 统一缩放（uniform scale）
+
+对于沿坐标轴的缩放，如果各坐标轴的缩放系数相同，则称为统一缩放（uniform scale）。
+
+### 非统一缩放（nonuniform scale）
+
+对于沿坐标轴的缩放，如果各坐标轴的缩放系数不相同，则称为非统一缩放（nonuniform scale）。
+
 ## 推导过程
 
 ### [正交矩阵](#正交矩阵orthogonal-matrix) 就是由一组 [标准正交基](#标准正交基orthonormal-basis) 组成的推导过程
@@ -1738,14 +1909,14 @@ $$
 M^T M \
 & = \
 \begin{bmatrix}
-\ - & v_1 & - \\
-\ - & v_2 & - \\
-\ - & v_3 & -
+\ - & \vec v_1 & - \ \\
+\ - & \vec v_2 & - \ \\
+\ - & \vec v_3 & - \
 \end{bmatrix} \
 \begin{bmatrix}
-\ | & | & | \\
-\ v_1 & v_2 & v_3 \\
-\ | & | & |
+\ | & | & | \ \\
+\ \vec v_1 & \vec v_2 & \vec v_3 \ \\
+\ | & | & | \
 \end{bmatrix} \\
 \ \\
 & = \
@@ -2218,7 +2389,7 @@ $$\begin{aligned}
 $$\begin{aligned}
 \vec V_t = Nlerp(\vec V_0, \vec V_1, t) &= \dfrac{Lerp(\vec V_0, \vec V_1, t)}{\lVert Lerp(\vec V_0, \vec V_1, t) \rVert} \\
 \ \\
-&= \dfrac{(1 - t) V_0 + t V_1}{\lVert (1 - t) V_0 + t V_1 \rVert}
+&= \dfrac{(1 - t) \vec V_0 + t \vec V_1}{\lVert (1 - t) \vec V_0 + t \vec V_1 \rVert}
 \end{aligned}$$
 
 如果两个旋转角度之间的差别非常小，那么就非常适合使用 Nlerp
@@ -2260,6 +2431,14 @@ $$\begin{aligned}
 \text{那么直接使用 }&Slerp(q_0, q_1, t)\text{ ， 从效果上来说是错误的} \\
 \text{应该改为使用 }&Slerp(q_0, -q_1, t)\text{ ， 才是正确的效果}
 \end{aligned}$$
+
+## 参考资料
+
+[关于图形和 OpenGL 以及相关数学推导的个人网站](http://www.songho.ca/opengl/gl_overview.html)
+
+[Nvidia Cg stdlib](https://developer.download.nvidia.com/cg/index_stdlib.html)
+
+[Nvidia Cg Reference Manual](https://developer.download.nvidia.com/cg/Cg_3.1/Cg-3.1_April2012_ReferenceManual.pdf)
 
 ## 待学习的参考资料
 
