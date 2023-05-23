@@ -12,7 +12,8 @@
 
 #### 坐标变换
 
-一个最基本的顶点着色器必须完成的一个工作是： **把顶点坐标从模型空间转换到齐次裁剪空间** 。
+一个最基本的顶点着色器必须完成的一个工作是：
+**把顶点坐标从 [模型空间](#模型空间model-space) 转换到 [齐次裁剪空间](#裁剪空间clip-space)** 。
 
 ##### 这是 Unity 内置渲染管线中的部分代码
 
@@ -141,13 +142,11 @@ o.pos = TransformObjectToHClip(v.position);
 
 #### Unity 使用的坐标系
 
-对于模型空间和世界空间，Unity使用的是左手坐标系。一个物体的右侧（right）、上侧（up）和前侧（forward）分别对应了x轴、y轴和z轴的正方向。
+对于 [模型空间](#模型空间model-space) 和 [世界空间](#世界空间world-space) ，Unity使用的是左手坐标系。一个物体的右侧（right）、上侧（up）和前侧（forward）分别对应了x轴、y轴和z轴的正方向。
 
-但对于观察空间来说，Unity使用的是右手坐标系。在这个坐标系中，摄像机的前向是z轴的负方向，这与在模型空间和世界空间中的定义相反。也就是说，z轴坐标的减少意味着场景深度的增加。
+但对于 [观察空间](#观察空间view-space) 来说，Unity使用的是右手坐标系。在这个坐标系中，摄像机的前向是z轴的负方向，这与在模型空间和世界空间中的定义相反。也就是说，z轴坐标的减少意味着场景深度的增加。
 
 <img src="./images/Unity的观察空间使用了右手坐标系.png"><br>*▲ 在Unity中，观察空间使用的是右手坐标系，摄像机的前向是z轴的负方向，z轴越小，物体的深度越大，离摄像机越远*</img>
-
-***ToDo***：加入模型空间、世界空间、观察空间的名词解释和链接
 
 ### 点和矢量
 
@@ -747,11 +746,11 @@ M^{-1} &=
 0 & 0 & 0 & 1
 \end{bmatrix} \\
 \ \\ &=\begin{bmatrix}
-\dfrac{m_0}{{\lVert \vec v_1 \rVert}^2} & \dfrac{m_1}{{\lVert \vec v_1 \rVert}^2} & \dfrac{m_2}{{\lVert \vec v_1 \rVert}^2} & -\ \dfrac{\vec v_1 \cdot \vec v_4}{{\lVert \vec v_1 \rVert}^2} \\
+\dfrac{m_0}{{\lVert \vec v_1 \rVert}^2} & \dfrac{m_1}{{\lVert \vec v_1 \rVert}^2} & \dfrac{m_2}{{\lVert \vec v_1 \rVert}^2} & \dfrac{-\ \vec v_1 \cdot \vec v_4}{{\lVert \vec v_1 \rVert}^2} \\
 \ \\
-\dfrac{m_3}{{\lVert \vec v_2 \rVert}^2} & \dfrac{m_4}{{\lVert \vec v_2 \rVert}^2} & \dfrac{m_5}{{\lVert \vec v_2 \rVert}^2} & -\ \dfrac{\vec v_2 \cdot \vec v_4}{{\lVert \vec v_2 \rVert}^2} \\
+\dfrac{m_3}{{\lVert \vec v_2 \rVert}^2} & \dfrac{m_4}{{\lVert \vec v_2 \rVert}^2} & \dfrac{m_5}{{\lVert \vec v_2 \rVert}^2} & \dfrac{-\ \vec v_2 \cdot \vec v_4}{{\lVert \vec v_2 \rVert}^2} \\
 \ \\
-\dfrac{m_6}{{\lVert \vec v_3 \rVert}^2} & \dfrac{m_7}{{\lVert \vec v_3 \rVert}^2} & \dfrac{m_8}{{\lVert \vec v_3 \rVert}^2} & -\ \dfrac{\vec v_3 \cdot \vec v_4}{{\lVert \vec v_3 \rVert}^2} \\
+\dfrac{m_6}{{\lVert \vec v_3 \rVert}^2} & \dfrac{m_7}{{\lVert \vec v_3 \rVert}^2} & \dfrac{m_8}{{\lVert \vec v_3 \rVert}^2} & \dfrac{-\ \vec v_3 \cdot \vec v_4}{{\lVert \vec v_3 \rVert}^2} \\
 \ \\
 \ 0 & 0 & 0 & 1
 \end{bmatrix}
@@ -807,8 +806,17 @@ $$
 
 
 
+#### 模型空间（model space）
 
+#### 世界空间（world space）
 
+#### 观察空间（view space）
+
+#### 裁剪空间（clip space）
+
+#### NDC空间（NDC space）
+
+#### 屏幕空间（screen space）
 
 ## Shader 概述
 
@@ -823,23 +831,25 @@ $$
 
 ### Unity Shader 模板
 
-#### Standard Surface Shader
+Unity Shader 常见的模板有以下几种：
+
+#### Standard Surface Shader 模板
 
 一个包含了标准光照模型的表面着色器模板
 
-#### Unlit Shader
+#### Unlit Shader 模板
 
 一个不包含光照（但包含雾效）的基本的顶点/片元着色器
 
-#### Image Effect Shader
+#### Image Effect Shader 模板
 
 为实现各种屏幕后处理效果提供了一个基本模板。
 
-#### Compute Shader
+#### Compute Shader 模板
 
 这类 Shader 旨在利用 GPU 的并行性来进行一些与常规渲染流水线无关的计算，暂时不管。
 
-#### Ray Tracing Shader
+#### Ray Tracing Shader 模板
 
 光线追踪，暂时不管。
 
@@ -1352,7 +1362,9 @@ Fallback Off
 
 事实上，Fallback还会影响阴影的投射。在渲染阴影纹理时，Unity会在每个Unity Shader中寻找一个阴影投射的Pass。通常情况下，我们不需要自己专门实现一个Pass，这是因为Fallback使用的内置Shader中包含了这样一个通用的Pass。因此，为每个Unity Shader正确设置Fallback是非常重要的。
 
-## SubShader的命令详解
+## SubShader 中的命令详解
+
+[SubShader](#subshader) 中的命令格式参考 [前面的说明](#subshader-中的-commands) 。
 
 ### Blend 命令详解
 
@@ -1666,6 +1678,172 @@ Shader "Examples/UsesNamedPass"
 
 ***ToDo***：待学习 [Unity 文档](https://docs.unity3d.com/Manual/SL-GrabPass.html)
 
+## Unity 内置管线中的 头文件、常量、变量、结构体、宏 和 函数
+
+### Unity 内置管线中的头文件
+
+- `HLSLSupport.cginc` 编译 CGPROGRAM 着色器时会自动包含此文件（但不包含在 HLSLPROGRAM 着色器中）。它声明各种预处理器宏以帮助多平台着色器开发。
+- `UnityShaderVariables.cginc` 编译 CGPROGRAM 着色器时会自动包含此文件（但不包含在 HLSLPROGRAM 着色器中）。它声明了着色器中常用的各种内置全局变量。它包含了 `HLSLSupport.cginc` 文件。
+- `UnityCG.cginc` 该文件通常包含在 Shader 对象中。它声明了许多内置的辅助函数和数据结构。它包含了 `UnityShaderVariables.cginc` 文件
+- `AutoLight.cginc` 提供了照明和阴影功能，表面着色器在内部使用这个文件。
+- `Lighting.cginc` 标准表面着色器光照模型，编写表面着色器时自动包含。
+
+### Unity 内置管线中的常量
+
+```hlsl
+// UnityCG.cginc
+
+#define UNITY_PI            3.14159265359f
+#define UNITY_TWO_PI        6.28318530718f
+#define UNITY_FOUR_PI       12.56637061436f
+#define UNITY_INV_PI        0.31830988618f
+#define UNITY_INV_TWO_PI    0.15915494309f
+#define UNITY_INV_FOUR_PI   0.07957747155f
+#define UNITY_HALF_PI       1.57079632679f
+#define UNITY_INV_HALF_PI   0.636619772367f
+
+#define UNITY_HALF_MIN      6.103515625e-5  // 2^-14, the same value for 10, 11 and 16-bit: https://www.khronos.org/opengl/wiki/Small_Float_Formats
+```
+
+### Unity 内置管线中的变量
+
+#### Unity 内置管线中时间变量
+
+时间以秒为单位，并通过 [Time.timeScale](https://docs.unity3d.com/2021.3/Documentation/ScriptReference/Time-timeScale.html) 进行缩放。没有提供访问未缩放时间的内置变量。
+
+```hlsl
+// UnityShaderVariables.cginc
+
+// Time (t = time since current level load) values from Unity
+float4 _Time; // (t/20, t, t*2, t*3)
+float4 _SinTime; // sin(t/8), sin(t/4), sin(t/2), sin(t)
+float4 _CosTime; // cos(t/8), cos(t/4), cos(t/2), cos(t)
+float4 unity_DeltaTime; // dt, 1/dt, smoothdt, 1/smoothdt
+```
+
+#### Unity 内置管线中的变换矩阵
+
+对应的头文件为 `UnityShaderVariables.cginc`
+
+所有的变换矩阵都是 float4x4 类型，按行优先的顺序填充。
+
+| 变换矩阵 | 作用 |
+| :--- | :--- |
+| UNITY_MATRIX_MVP | 将坐标位置和方向矢量从 [模型空间](#模型空间model-space) 变换到 [裁剪空间](#裁剪空间clip-space) |
+| UNITY_MATRIX_MV | 将坐标位置和方向矢量从 [模型空间](#模型空间model-space) 变换到 [观察空间](#观察空间view-space) |
+| UNITY_MATRIX_V | 将坐标位置和方向矢量从 [世界空间](#世界空间world-space) 变换到 [观察空间](#观察空间view-space) |
+| UNITY_MATRIX_P | 将坐标位置和方向矢量从 [观察空间](#观察空间view-space) 变换到 [裁剪空间](#裁剪空间clip-space) |
+| UNITY_MATRIX_VP | 将坐标位置和方向矢量从 [世界空间](#世界空间world-space) 变换到 [裁剪空间](#裁剪空间clip-space) |
+| UNITY_MATRIX_T_MV | UNITY_MATRIX_MV 的 转置矩阵。***ToDo***:用途待定  |
+| UNITY_MATRIX_IT_MV | UNITY_MATRIX_MV 的 逆转置矩阵。用于将法线从 [模型空间](#模型空间model-space) 变换到 [观察空间](#观察空间view-space) |
+| unity_ObjectToWorld | 将坐标位置和方向矢量从 [模型空间](#模型空间model-space) 变换到 [世界空间](#世界空间world-space) |
+| unity_WorldToObject | unity_ObjectToWorld 的逆矩阵。用于将坐标位置和方向矢量从 [世界空间](#世界空间world-space) 变换到 [模型空间](#模型空间model-space) |
+
+#### Unity 内置管线中的摄像机和屏幕变量
+
+```hlsl
+// UnityShaderVariables.cginc
+
+// 摄像机在世界空间中的位置
+float3 _WorldSpaceCameraPos; // camera position in world space
+
+// 相机的参数。注意： 对于（ DirectX 中）屏幕原点在左上角的情况， x = -1
+// x = 1 or -1 (-1 if projection is flipped) 
+// y = near plane
+// z = far plane
+// w = 1/far plane
+float4 _ProjectionParams;
+
+// 屏幕尺寸相关变量
+// x = width
+// y = height
+// z = 1 + 1.0/width
+// w = 1 + 1.0/height
+float4 _ScreenParams;
+
+// 用于线性化 Z-Buffer 的深度。
+// Values used to linearize the Z buffer (http://www.humus.name/temp/Linearize%20depth.txt)
+// x = 1-far/near
+// y = far/near
+// z = x/far
+// w = y/far
+// or in case of a reversed depth buffer (UNITY_REVERSED_Z is 1)
+// x = -1+far/near
+// y = 1
+// z = x/far
+// w = 1/far
+float4 _ZBufferParams;
+
+// 正交投影的参数
+// x = orthographic camera's width
+// y = orthographic camera's height
+// z = unused
+// w = 1.0 if camera is ortho, 0.0 if perspective
+float4 unity_OrthoParams;
+
+// 相机的投影矩阵。注意：这可能与当前设置的投影矩阵不同，例如渲染阴影时下面的这些矩阵仍然是原始相机的投影矩阵。
+// Projection matrices of the camera.
+// Note that this might be different from projection matrix that is set right now, 
+// e.g. while rendering shadows the matrices below are still the projection of original camera.
+float4x4 unity_CameraProjection;
+float4x4 unity_CameraInvProjection;
+float4x4 unity_WorldToCamera;
+float4x4 unity_CameraToWorld;
+
+// 相机的 平头锥体 6个面的方程。平面方程形如： ax + by + cz + d = 0 ，保存为 float4 (a, b, c, d)
+// Camera frustum plane world space equations, in this order: left, right, bottom, top, near, far.
+float4 unity_CameraWorldClipPlanes[6];
+```
+
+#### Unity 内置管线中的光照变量
+
+```hlsl
+// ToDo: 有待学习。附注：在平行光（USING_DIRECTIONAL_LIGHT）情况下， _WorldSpaceLightPos0.xyz 表示的是光线方向， _WorldSpaceLightPos0.w = 0 。
+```
+
+#### Unity 内置管线中的雾和环境变量
+
+```hlsl
+// ToDo: 有待学习。
+```
+
+#### Unity 内置管线中的结构体
+
+```hlsl
+// UnityCG.cginc
+
+struct appdata_base {
+    float4 vertex : POSITION; // 模型空间下的顶点位置坐标
+    float3 normal : NORMAL; // 模型空间下的顶点法线方向矢量
+    float4 texcoord : TEXCOORD0; // 顶点对应的纹理 uv
+
+    // 参考 https://docs.unity3d.com/2021.3/Documentation/Manual/GPUInstancing.html
+    // 参考 https://zhuanlan.zhihu.com/p/514055324
+    // 参考 https://blog.csdn.net/cgy56191948/article/details/104444975
+    UNITY_VERTEX_INPUT_INSTANCE_ID 
+};
+
+struct appdata_tan {
+    float4 vertex : POSITION;
+    float4 tangent : TANGENT;
+    float3 normal : NORMAL;
+    float4 texcoord : TEXCOORD0;
+    UNITY_VERTEX_INPUT_INSTANCE_ID
+};
+
+struct appdata_full {
+    float4 vertex : POSITION;
+    float4 tangent : TANGENT;
+    float3 normal : NORMAL;
+    float4 texcoord : TEXCOORD0;
+    float4 texcoord1 : TEXCOORD1;
+    float4 texcoord2 : TEXCOORD2;
+    float4 texcoord3 : TEXCOORD3;
+    fixed4 color : COLOR;
+    UNITY_VERTEX_INPUT_INSTANCE_ID
+};
+```
+
 ## 其他内容
 
 ### 着色器关键字（Shader Keyword）
@@ -1695,10 +1873,6 @@ Shader "Examples/UsesNamedPass"
 - 在传统的 Shader 中，我们需要编写冗长的代码来设置着色器的输入和输出，要小心地处理这些输入输出的位置对应关系等。
 而在 Unity Shader 中，我们只需要在特定语句块中声明一些属性，就可以依靠材质来方便地改变这些属性。
 而且对于模型自带的数据（如顶点位置、纹理坐标、法线等）， Unity Shader 也提供了直接访问的方法，不需要开发者自行编码来传给着色器。
-
-### NDC
-
-归一化的设备坐标（Normalized Device Coordinates）
 
 ### Early-Z 技术
 
