@@ -1824,25 +1824,81 @@ struct appdata_base {
 };
 
 struct appdata_tan {
-    float4 vertex : POSITION;
-    float4 tangent : TANGENT;
-    float3 normal : NORMAL;
-    float4 texcoord : TEXCOORD0;
+    float4 vertex : POSITION; // 模型空间下的顶点位置坐标
+    float4 tangent : TANGENT; // 模型空间下的顶点切线方向矢量
+    float3 normal : NORMAL; // 模型空间下的顶点法线方向矢量
+    float4 texcoord : TEXCOORD0; // 顶点对应的纹理 uv
     UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
 struct appdata_full {
-    float4 vertex : POSITION;
-    float4 tangent : TANGENT;
-    float3 normal : NORMAL;
+    float4 vertex : POSITION; // 模型空间下的顶点位置坐标
+    float4 tangent : TANGENT; // 模型空间下的顶点切线方向矢量
+    float3 normal : NORMAL; // 模型空间下的顶点法线方向矢量
     float4 texcoord : TEXCOORD0;
     float4 texcoord1 : TEXCOORD1;
     float4 texcoord2 : TEXCOORD2;
     float4 texcoord3 : TEXCOORD3;
-    fixed4 color : COLOR;
+    fixed4 color : COLOR; // 顶点颜色
     UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 ```
+
+### Unity 内置管线中的函数
+
+#### Unity 内置管线中的基础函数
+
+具体可以参考 [Cg stdlib 文档](https://developer.download.nvidia.com/cg/index_stdlib.html)
+
+```hlsl
+// 符号和绝对值
+abs(x); sign(x);
+
+// 小数、整数、余数
+ceil(x); floor(x); round(x); fmod(x, y);
+trunc(x); frac(x); modf(x, i);
+
+// 指数和对数
+exp(x); exp2(x); log(x); log2(x); log10(x);
+pow(x, y); sqrt(x); rsqrt(x);
+frexp(x); ldexp(x, n);
+
+// 逻辑判断
+all(x); any(x);
+isfinite(x); isinf(x); isnan(x);
+
+// 范围约束
+clamp(x, a, b); saturate(x);
+min(x, y); max(x, y);
+step(a, x); smoothstep(a, b, x);
+
+// 角度和弧度
+degree(x); radians(x);
+
+// 三角函数
+sin(x); cos(x); sincos(x); tan(x);
+asin(x); acos(x); atan(x); atan2(y, x);
+
+// 双曲函数
+sinh(x); cosh(x); tanh(x);
+
+// 矢量
+dot(x); cross(x); length(x); distance(x);
+
+// 矩阵
+mul(x, y); transpose(x); determinant(x); inverse(x);
+
+// 插值
+lerp(a, b, t);
+
+// 反射和折射
+lit(NdotL, NdotH, m); reflect(i, n);
+refract(i, n, eta);
+```
+
+
+
+
 
 ## 其他内容
 
@@ -2315,7 +2371,7 @@ S_x &= \dfrac{-z}{x} = \dfrac{1}{aspect\ *\ \tan(\dfrac{FOV}{2})}  \\
 &= \dfrac{\cot(\dfrac{FOV}{2})}{aspect}
 \end{aligned}  \\
 \ \\
-&\text{当点位于视锥体的右锥面上}
+&\text{当点位于视锥体的上锥面上}
 \begin{cases}
 \begin{aligned}
 \text{根据三角形相似性， } &\dfrac{y}{-z} = \tan(\dfrac{FOV}{2})  \\
