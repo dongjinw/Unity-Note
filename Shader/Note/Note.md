@@ -804,19 +804,63 @@ $$
 
 ### 坐标空间
 
+在 Shader 中常见的坐标空间变换有：
 
+- 在顶点着色器中， **必须** 将模型顶点的位置坐标，从模型空间变换到裁剪空间。
+- 顶点着色器和片元着色器配合，进行 [法线变换](#法线变换)。
 
 #### 模型空间（model space）
 
+模型空间（model space），是和某个模型或者说是对象有关的。有时模型空间也被称为对象空间（object space）或局部空间（local space）。每个模型都有自己独立的坐标空间，当它移动或旋转的时候，模型空间也会跟着它移动和旋转。
+
+在模型空间中，我们经常使用一些方向概念，例如“前（forward）”、“后（back）”、“左（left）”、“右（right）”、“上（up）”、“下（down）”。我们把这些方向称为自然方向。模型空间中的坐标轴通常会使用这些自然方向。
+
+Unity在模型空间中使用的是左手坐标系，因此在模型空间中，+x轴、+y轴、+z轴分别对应的是模型的右、上和前向。
+
 #### 世界空间（world space）
 
+世界空间（world space）是一个特殊的坐标系，可以被用于描述绝对位置。
+
+在Unity中，世界空间同样使用了左手坐标系。但它的x轴、y轴、z轴是固定不变的。
+
+顶点变换的第一步，就是将顶点坐标从模型空间变换到世界空间。这个变换通常叫做模型变换（model transform）。
+
+数学表述为 $P_{world} = M_{model} \ P_{model}$
+
+Unity 代码为
+
+```hlsl
+float4 posWorld = mul(unity_ObjectToWorld, float4(posModel, 1.0f));
+```
+
 #### 观察空间（view space）
+
+观察空间（view space）也被称为摄像机空间（camera space）。在Unity的观察空间中，摄像机位于原点，使用右手坐标系，即：+x轴指向右方，+y轴指向上方，而+z轴指向的是摄像机的后方。
+
+顶点变换第二步，就是将顶点坐标从世界空间变换到观察空间。
+
+数学表述为 $P_{view} = M_{view} \ P_{world} = M_{model\_view} \ P_{model}$
 
 #### 裁剪空间（clip space）
 
 #### NDC空间（NDC space）
 
 #### 屏幕空间（screen space）
+
+#### 切线空间（tangent space）
+
+直观地讲，模型顶点中的纹理坐标，就定义于切线空间。普通二维纹理坐标包含 U, V 两项，其中 U 坐标增长的方向， 即切线空间中的 tangent 轴， V 坐标增加的方向，为切线空间中的 bitangent 轴。模型中不同的顶点，都有对应的切线空间，其 tangent 轴和 bitangent 轴分别位于三角形所在平面上，结合三角形面对应的法线，我们称切线轴（T）、副切线轴（B）及法线轴（N）。它们所组成的坐标系，即切线空间（TBN）。
+
+切线空间主要用于处理法线贴图。
+
+具体可以参考 [OpenGL 教程中的法线贴图部分](https://github.com/cybercser/OpenGL_3_3_Tutorial_Translation/blob/master/Tutorial%2013%20Normal%20Mapping.md) 以及 [切线空间详解](https://www.cnblogs.com/Alphuae/p/16575103.html)
+
+### 法线变换
+
+针对常见的切线空间下的法线贴图，在 Shader 中的法线变换一般分为两种
+
+- 在顶点着色器中，将光照和视角方向从世界空间变换到切线空间；然后在片元着色器中，使用（切线空间下的）法线贴图的数据，结合（插值之后的）切线空间中的光照和视角方向，进行着色。
+- 在顶点着色器中，生成切线空间到世界空间的变换矩阵；然后在片元着色器中，使用（插值之后的）变换矩阵，将（切线空间下的）法线贴图的数据，从切线空间变换到世界空间，然后在世界空间中进行着色。
 
 ## Shader 概述
 
@@ -1725,19 +1769,19 @@ float4 unity_DeltaTime; // dt, 1/dt, smoothdt, 1/smoothdt
 
 对应的头文件为 `UnityShaderVariables.cginc`
 
-所有的变换矩阵都是 float4x4 类型，按行优先的顺序填充。
+所有的变换矩阵都是 float4x4 类型， **按行优先的顺序填充** 。
 
 | 变换矩阵 | 作用 |
 | :--- | :--- |
-| UNITY_MATRIX_MVP | 将坐标位置和方向矢量从 [模型空间](#模型空间model-space) 变换到 [裁剪空间](#裁剪空间clip-space) |
-| UNITY_MATRIX_MV | 将坐标位置和方向矢量从 [模型空间](#模型空间model-space) 变换到 [观察空间](#观察空间view-space) |
-| UNITY_MATRIX_V | 将坐标位置和方向矢量从 [世界空间](#世界空间world-space) 变换到 [观察空间](#观察空间view-space) |
-| UNITY_MATRIX_P | 将坐标位置和方向矢量从 [观察空间](#观察空间view-space) 变换到 [裁剪空间](#裁剪空间clip-space) |
-| UNITY_MATRIX_VP | 将坐标位置和方向矢量从 [世界空间](#世界空间world-space) 变换到 [裁剪空间](#裁剪空间clip-space) |
+| UNITY_MATRIX_MVP | 将位置坐标和方向矢量从 [模型空间](#模型空间model-space) 变换到 [裁剪空间](#裁剪空间clip-space) |
+| UNITY_MATRIX_MV | 将位置坐标和方向矢量从 [模型空间](#模型空间model-space) 变换到 [观察空间](#观察空间view-space) |
+| UNITY_MATRIX_V | 将位置坐标和方向矢量从 [世界空间](#世界空间world-space) 变换到 [观察空间](#观察空间view-space) |
+| UNITY_MATRIX_P | 将位置坐标和方向矢量从 [观察空间](#观察空间view-space) 变换到 [裁剪空间](#裁剪空间clip-space) |
+| UNITY_MATRIX_VP | 将位置坐标和方向矢量从 [世界空间](#世界空间world-space) 变换到 [裁剪空间](#裁剪空间clip-space) |
 | UNITY_MATRIX_T_MV | UNITY_MATRIX_MV 的 转置矩阵。***ToDo***:用途待定  |
-| UNITY_MATRIX_IT_MV | UNITY_MATRIX_MV 的 逆转置矩阵。用于将法线从 [模型空间](#模型空间model-space) 变换到 [观察空间](#观察空间view-space) |
-| unity_ObjectToWorld | 将坐标位置和方向矢量从 [模型空间](#模型空间model-space) 变换到 [世界空间](#世界空间world-space) |
-| unity_WorldToObject | unity_ObjectToWorld 的逆矩阵。用于将坐标位置和方向矢量从 [世界空间](#世界空间world-space) 变换到 [模型空间](#模型空间model-space) |
+| UNITY_MATRIX_IT_MV | UNITY_MATRIX_MV 的 逆转置矩阵。用于将 **法线** 从 [模型空间](#模型空间model-space) 变换到 [观察空间](#观察空间view-space) |
+| unity_ObjectToWorld | 将位置坐标和方向矢量从 [模型空间](#模型空间model-space) 变换到 [世界空间](#世界空间world-space) |
+| unity_WorldToObject | unity_ObjectToWorld 的逆矩阵。用于将位置坐标和方向矢量从 [世界空间](#世界空间world-space) 变换到 [模型空间](#模型空间model-space) |
 
 #### Unity 内置管线中的摄像机和屏幕变量
 
@@ -1894,8 +1938,82 @@ lerp(a, b, t);
 // 反射和折射
 lit(NdotL, NdotH, m); reflect(i, n);
 refract(i, n, eta);
+
+// 纹理采样
+tex2D(samp, uv);
 ```
 
+#### Unity 内置管线中的空间变换函数
+
+```hlsl
+// UnityCG.cginc
+
+// 位置坐标变换：
+inline float3 UnityObjectToViewPos( in float3 pos ) // 模型空间到观察空间
+inline float3 UnityObjectToViewPos(float4 pos)      // 同上
+inline float4 UnityObjectToClipPos( in float3 pos ) // 模型空间到裁剪空间
+inline float4 UnityObjectToClipPos(float4 pos)      // 同上
+inline float3 UnityWorldToViewPos( in float3 pos )  // 世界空间到观察空间
+inline float4 UnityWorldToClipPos( in float3 pos )  // 世界空间到裁剪空间
+inline float4 UnityViewToClipPos( in float3 pos )   // 观察空间到裁剪空间
+
+// 方向矢量变换（已经归一化）：
+inline float3 UnityObjectToWorldDir( in float3 dir ) // 模型空间到世界空间
+inline float3 UnityWorldToObjectDir( in float3 dir ) // 世界空间到模型空间
+
+// 法线变换（已经归一化）：
+inline float3 UnityObjectToWorldNormal( in float3 norm ) // 模型空间到世界空间
+{
+#ifdef UNITY_ASSUME_UNIFORM_SCALING
+    return UnityObjectToWorldDir(norm); // 统一缩放，矩阵 unity_ObjectToWorld 的逆转置矩阵就是自身。
+#else
+    // mul(IT_M, norm) => mul(norm, I_M) => {dot(norm, I_M.col0), dot(norm, I_M.col1), dot(norm, I_M.col2)}
+    return normalize(mul(norm, (float3x3)unity_WorldToObject)); // 非统一缩放
+#endif
+}
+
+// 其他变换（未归一化）：
+inline float2 TransformViewToProjection (float2 v) // 观察空间到裁剪空间
+inline float3 TransformViewToProjection (float3 v) // 同上
+```
+
+#### Unity 内置管线中计算 “指向相机和光源的方向矢量” 的函数
+
+```hlsl
+// 顶点到相机的方向矢量（未归一化）：
+inline float3 UnityWorldSpaceViewDir( in float3 worldPos )  // 输入：世界空间位置坐标；输出：世界空间方向矢量
+inline float3 WorldSpaceViewDir( in float4 localPos )       // 输入：模型空间位置坐标；输出：世界空间方向矢量
+inline float3 ObjSpaceViewDir( in float4 localPos )         // 输入：模型空间位置坐标；输出：模型空间方向矢量
+
+// 顶点到光源的方向矢量（未归一化）：
+inline float3 UnityWorldSpaceLightDir( in float3 worldPos ) // 输入：世界空间位置坐标；输出：世界空间方向矢量
+inline float3 WorldSpaceLightDir( in float4 localPos )      // 输入：模型空间位置坐标；输出：世界空间方向矢量
+inline float3 ObjSpaceLightDir( in float4 localPos )        // 输入：模型空间位置坐标；输出：模型空间方向矢量
+```
+
+#### Unity 内置管线中计算屏幕位置和深度的函数
+
+```hlsl
+// 还原线性深度
+// 输入：（深度图 _CameraDepthTexture 中的）非线性深度值（ 0 对应 近平面， 1 对应 远平面）。
+// 输出：线性深度值（ 0 对应 摄像机， 1 对应远平面）。输入 0 时，输出 N/F ；输入 1 时，输出 1 。
+inline float Linear01Depth( float z )
+
+// 获取观察空间中的深度（正数）
+// 输入：（深度图 _CameraDepthTexture 中的）非线性深度值（ 0 对应 近平面， 1 对应 远平面）。
+// 输出：观察空间中的线性深度值（物体到摄像机的 Z 轴距离）。输入 0 时，输出 N ；输入 1 时，输出 F 。
+inline float LinearEyeDepth( float z )
+
+// 获取裁剪空间下位置坐标对应的屏幕坐标
+// 输入：裁剪空间下（没有经过齐次除法）的位置坐标
+// 输出：使用齐次坐标表示的，屏幕空间下的坐标
+inline float4 ComputeScreenPos(float4 pos)
+```
+
+```hlsl
+// 纹理缩放（Tilling）和偏移（Offset）
+#define TRANSFORM_TEX(tex,name) (tex.xy * name##_ST.xy + name##_ST.zw)
+```
 
 
 
@@ -2418,7 +2536,7 @@ $$
 
 ## 旋转和四元数
 
-参考 [四元数教程](https://krasjet.github.io/quaternion/quaternion.pdf)
+这部分内容完全参考自 [四元数教程](https://krasjet.github.io/quaternion/quaternion.pdf)
 
 ### 2D 旋转
 
@@ -2503,7 +2621,8 @@ $$
 四元数的乘法具有以下数学性质：
 
 - 四元数的乘法不满足交换律，即 $p q \neq q p$
-- 四元数的乘法满足结合律，
+- 四元数的乘法满足结合律，即 $(p q) r = p (q r)$
+- 四元数的乘法满足分配率，即 $p (q + r) = p q + p r,\quad (p + q) r = p r + q r$
 
 #### 纯四元数
 
@@ -2520,6 +2639,17 @@ $$\begin{aligned}
 v u &= [0 - \vec v \cdot \vec u, \ 0 + \vec v \times \vec u] \\
 &= [- \vec v \cdot \vec u, \ \vec v \times \vec u]
 \end{aligned}$$
+
+#### 共轭四元数
+
+一个四元数 $q = a + bi + cj + dk$ 的共轭为 $q^{\ast} = a - bi - cj - dk$ \
+如果用标量矢量有序对的形式来定义的话， $q = [s, \ \vec v]$ 的共轭为 $q^{\ast} = [s, \ -\vec v]$ 。
+
+将矢量形式代入乘法运算可以得到，共轭四元数的一个非常有用的性质就是
+
+$$
+q q^{\ast} = {\lVert q \rVert}^{2}
+$$
 
 #### 四元数的逆
 
@@ -2542,17 +2672,6 @@ $$
 $$q^{-1} = \dfrac{q^{\ast}}{{\lVert q \rVert}^{2}}$$
 
 对于模长为 1 的单位四元数 $q^{-1} = q^{\ast}$
-
-#### 共轭四元数
-
-一个四元数 $q = a + bi + cj + dk$ 的共轭为 $q^{\ast} = a - bi - cj - dk$ \
-如果用标量矢量有序对的形式来定义的话， $q = [s, \ \vec v]$ 的共轭为 $q^{\ast} = [s, \ -\vec v]$ 。
-
-将矢量形式代入乘法运算可以得到，共轭四元数的一个非常有用的性质就是
-
-$$
-q q^{\ast} = {\lVert q \rVert}^{2}
-$$
 
 ### 四元数旋转
 
