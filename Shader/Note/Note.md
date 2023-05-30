@@ -839,7 +839,7 @@ float4 posWorld = mul(unity_ObjectToWorld, float4(posModel, 1.0f));
 
 顶点变换第二步，就是将顶点坐标从世界空间变换到观察空间。
 
-数学表述为 $P_{view} = M_{view} \ P_{world} = M_{model\_view} \ P_{model}$
+数学表述为 $P_{view} = M_{view} \ P_{world} = M_{model-view} \ P_{model}$
 
 #### 裁剪空间（clip space）
 
