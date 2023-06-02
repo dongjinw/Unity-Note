@@ -851,6 +851,8 @@ float4 posWorld = mul(unity_ObjectToWorld, float4(posModel, 1.0f));
 
 直观地讲，模型顶点中的纹理坐标，就定义于切线空间。普通二维纹理坐标包含 U, V 两项，其中 U 坐标增长的方向， 即切线空间中的 tangent 轴， V 坐标增加的方向，为切线空间中的 bitangent 轴。模型中不同的顶点，都有对应的切线空间，其 tangent 轴和 bitangent 轴分别位于三角形所在平面上，结合三角形面对应的法线，我们称切线轴（T）、副切线轴（B）及法线轴（N）。它们所组成的坐标系，即切线空间（TBN）。
 
+在实时渲染中，一般使用副法线（binormal）作为 B 轴来定义切线空间。在数学定义中， binormal 严格垂直于 normal 和 tangent 轴。
+
 切线空间主要用于处理法线贴图。
 
 具体可以参考 [OpenGL 教程中的法线贴图部分](https://github.com/cybercser/OpenGL_3_3_Tutorial_Translation/blob/master/Tutorial%2013%20Normal%20Mapping.md) 以及 [切线空间详解](https://www.cnblogs.com/Alphuae/p/16575103.html)
@@ -859,8 +861,106 @@ float4 posWorld = mul(unity_ObjectToWorld, float4(posModel, 1.0f));
 
 针对常见的切线空间下的法线贴图，在 Shader 中的法线变换一般分为两种
 
-- 在顶点着色器中，将光照和视角方向从世界空间变换到切线空间；然后在片元着色器中，使用（切线空间下的）法线贴图的数据，结合（插值之后的）切线空间中的光照和视角方向，进行着色。
-- 在顶点着色器中，生成切线空间到世界空间的变换矩阵；然后在片元着色器中，使用（插值之后的）变换矩阵，将（切线空间下的）法线贴图的数据，从切线空间变换到世界空间，然后在世界空间中进行着色。
+- [在切线空间处理法线贴图](#在切线空间处理法线贴图) 在顶点着色器中，将光线和观察方向从世界空间变换到切线空间；然后在片元着色器中，使用（切线空间下的）法线贴图的数据，结合（插值之后的）切线空间中的光线和观察方向，进行着色。
+- [在世界空间处理法线贴图](#在世界空间处理法线贴图) 在顶点着色器中，生成切线空间到世界空间的变换矩阵；然后在片元着色器中，使用（插值之后的）变换矩阵，将（切线空间下的）法线贴图的数据，从切线空间变换到世界空间，然后在世界空间中进行着色。
+
+备注
+
+- 法线贴图可以是标准的纹理（Texture 2D），也可以在纹理的 Inspector 窗口中将 "Texture Type" 项设置为 "Normal map" ，这样设置可以让 Unity 进行对应的压缩。
+
+#### 在切线空间处理法线贴图
+
+```hlsl
+struct a2v {
+    float4 vertex : POSITION;   // 模型空间下的顶点位置坐标
+    float4 tangent : TANGENT;   // 模型空间下的顶点切线方向矢量，其中 w 分量（正负 1 ）表明了叉乘结果的方向。
+    float3 normal : NORMAL;     // 模型空间下的顶点法线方向矢量
+    float4 texcoord : TEXCOORD0;    // 顶点对应的纹理 uv
+};
+
+struct v2f {
+　　float4 pos：SV_POSITION;    // 片元的屏幕位置
+　　float4 uv：TEXCOORD0;       // xy 分量记录颜色贴图的 UV 坐标， zw 分量记录法线贴图的 UV 坐标。
+　　float3 lightDir：TEXCOORD1; // 切线空间下的光线方向
+　　float3 viewDir：TEXCOORD2;  // 切线空间下的观察方向
+};
+
+// 主要是将光线方向和观察方向从模型空间变换到切线空间
+v2f vert(a2v v) {
+　　v2f o;
+    // 计算裁剪空间下的顶点位置坐标
+　　// o.pos = mul(UNITY_MATRIX_MVP，v.vertex);
+    o.pos = UnityObjectToClipPos(v.vertex);
+
+    // 计算颜色贴图的 UV 坐标
+　　// o.uv.xy = v.texcoord.xy * _MainTex_ST.xy + _MainTex_ST.zw;
+    o.uv.xy = TRANSFORM_TEX(v.texcoord, _MainTex);
+    // 计算法线贴图的 UV 坐标
+　　// o.uv.zw = v.texcoord.xy * _BumpMap_ST.xy + _BumpMap_ST.zw;
+    o.uv.xy = TRANSFORM_TEX(v.texcoord, _BumpMap);
+
+　　// 计算 binormal
+    //  float3 binormal = cross( normalize(v.normal)，normalize(v.tangent.xyz) ) * v.tangent.w;
+    // 创建从模型空间到切线空间的变换矩阵
+    //  float3x3 rotation = float3x3(v.tangent.xyz，binormal，v.normal);
+　　// 直接使用 Unity 内置宏实现上面两端代码的功能。
+　　TANGENT_SPACE_ROTATION;
+
+    // 下面的方向矢量不需要归一化，因为从顶点着色器到片元着色器的过程中，会对数据进行插值。
+　　// 将光线方向从模型空间变换到切线空间
+　　o.lightDir = mul(rotation，ObjSpaceLightDir(v.vertex)).xyz;
+　　// 将观察方向从模型空间变换到切线空间
+　　o.viewDir = mul(rotation，ObjSpaceViewDir(v.vertex)).xyz;
+　　return o;
+}
+
+// 获取法线贴图的数据，在切线空间下进行着色
+fixed4 frag(v2f i)：SV_Target {
+    // 插值之后的方向矢量必须要归一化
+　　fixed3 tangentLightDir = normalize(i.lightDir);
+　　fixed3 tangentViewDir = normalize(i.viewDir);
+
+　　// 获取法线贴图的数据，这个数据要经过处理（解压）之后才能变为真正的法线数据
+　　fixed4 packedNormal = tex2D(_BumpMap，i.uv.zw);
+
+    // 解压并计算法线数据
+　　fixed3 tangentNormal;
+　　// 如果没有把材质类型设置为 "Normal map" ，那么直接获取其 xy 分量，进行计算。
+    //　tangentNormal.xy = (packedNormal.xy * 2 - 1) * _BumpScale;
+    //　tangentNormal.z = sqrt(1.0 - saturate(dot(tangentNormal.xy，tangentNormal.xy)));
+　　// 如果将材质类型设置为 "Normal map" ，那么使用 Unity 内置的解压函数获取 xy 分量，再进行计算。
+　　tangentNormal = UnpackNormal(packedNormal);
+　　tangentNormal.xy *= _BumpScale;
+　　tangentNormal.z = sqrt(1.0 - saturate(dot(tangentNormal.xy，tangentNormal.xy)));
+
+    // 在切线空间下计算着色
+　　fixed3 albedo = tex2D(_MainTex，i.uv).rgb * _Color.rgb;
+　　fixed3 ambient = UNITY_LIGHTMODEL_AMBIENT.xyz * albedo;
+　　fixed3 diffuse = _LightColor0.rgb * albedo * max(0，dot(tangentNormal，tangentLightDir));
+　　fixed3 halfDir = normalize(tangentLightDir + tangentViewDir);
+　　fixed3 specular = _LightColor0.rgb * _Specular.rgb * pow(max(0，dot(tangentNormal，halfDir))，_Gloss);
+　　return fixed4(ambient + diffuse + specular，1.0);
+}
+```
+
+#### 在世界空间处理法线贴图
+
+```hlsl
+struct a2v {
+    float4 vertex : POSITION;   // 模型空间下的顶点位置坐标
+    float4 tangent : TANGENT;   // 模型空间下的顶点切线方向矢量，其中 w 分量（正负 1 ）表明了叉乘结果的方向。
+    float3 normal : NORMAL;     // 模型空间下的顶点法线方向矢量
+    float4 texcoord : TEXCOORD0;    // 顶点对应的纹理 uv
+};
+
+struct v2f {
+　　float4 pos：SV_POSITION;    // 片元的屏幕位置
+　　float4 uv：TEXCOORD0;
+　　float4 TtoW0：TEXCOORD1；
+　　float4 TtoW1：TEXCOORD2；
+　　float4 TtoW2：TEXCOORD3；
+};
+```
 
 ## Shader 概述
 
@@ -1842,7 +1942,7 @@ float4 unity_CameraWorldClipPlanes[6];
 #### Unity 内置管线中的光照变量
 
 ```hlsl
-// ToDo: 有待学习。附注：在平行光（USING_DIRECTIONAL_LIGHT）情况下， _WorldSpaceLightPos0.xyz 表示的是光线方向， _WorldSpaceLightPos0.w = 0 。
+// ToDo: 有待学习。附注：在平行光（USING_DIRECTIONAL_LIGHT）情况下， _WorldSpaceLightPos0.xyz 表示的是光线的反方向， _WorldSpaceLightPos0.w = 0 。
 ```
 
 #### Unity 内置管线中的雾和环境变量
@@ -1857,9 +1957,9 @@ float4 unity_CameraWorldClipPlanes[6];
 // UnityCG.cginc
 
 struct appdata_base {
-    float4 vertex : POSITION; // 模型空间下的顶点位置坐标
-    float3 normal : NORMAL; // 模型空间下的顶点法线方向矢量
-    float4 texcoord : TEXCOORD0; // 顶点对应的纹理 uv
+    float4 vertex : POSITION;   // 模型空间下的顶点位置坐标
+    float3 normal : NORMAL;     // 模型空间下的顶点法线方向矢量
+    float4 texcoord : TEXCOORD0;    // 顶点对应的纹理 uv
 
     // 参考 https://docs.unity3d.com/2021.3/Documentation/Manual/GPUInstancing.html
     // 参考 https://zhuanlan.zhihu.com/p/514055324
@@ -1868,22 +1968,22 @@ struct appdata_base {
 };
 
 struct appdata_tan {
-    float4 vertex : POSITION; // 模型空间下的顶点位置坐标
-    float4 tangent : TANGENT; // 模型空间下的顶点切线方向矢量
-    float3 normal : NORMAL; // 模型空间下的顶点法线方向矢量
-    float4 texcoord : TEXCOORD0; // 顶点对应的纹理 uv
+    float4 vertex : POSITION;   // 模型空间下的顶点位置坐标
+    float4 tangent : TANGENT;   // 模型空间下的顶点切线方向矢量，其中 w 分量（正负 1 ）表明了叉乘结果的方向。
+    float3 normal : NORMAL;     // 模型空间下的顶点法线方向矢量
+    float4 texcoord : TEXCOORD0;    // 顶点对应的纹理 uv
     UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
 struct appdata_full {
-    float4 vertex : POSITION; // 模型空间下的顶点位置坐标
-    float4 tangent : TANGENT; // 模型空间下的顶点切线方向矢量
-    float3 normal : NORMAL; // 模型空间下的顶点法线方向矢量
+    float4 vertex : POSITION;   // 模型空间下的顶点位置坐标
+    float4 tangent : TANGENT;   // 模型空间下的顶点切线方向矢量，其中 w 分量（正负 1 ）表明了叉乘结果的方向。
+    float3 normal : NORMAL;     // 模型空间下的顶点法线方向矢量
     float4 texcoord : TEXCOORD0;
     float4 texcoord1 : TEXCOORD1;
     float4 texcoord2 : TEXCOORD2;
     float4 texcoord3 : TEXCOORD3;
-    fixed4 color : COLOR; // 顶点颜色
+    fixed4 color : COLOR;       // 顶点颜色
     UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 ```
@@ -2013,6 +2113,17 @@ inline float4 ComputeScreenPos(float4 pos)
 ```hlsl
 // 纹理缩放（Tilling）和偏移（Offset）
 #define TRANSFORM_TEX(tex,name) (tex.xy * name##_ST.xy + name##_ST.zw)
+```
+
+#### Unity 内置管线中的宏
+
+```hlsl
+// 构建从模型空间到顶点切线空间的 3x3 变换矩阵
+#define TANGENT_SPACE_ROTATION \
+    float3 binormal = cross( normalize(v.normal), normalize(v.tangent.xyz) ) * v.tangent.w; \
+    float3x3 rotation = float3x3( v.tangent.xyz, binormal, v.normal )
+
+
 ```
 
 
